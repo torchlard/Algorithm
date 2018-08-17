@@ -12,33 +12,32 @@ data RB : Type -> Type where
     where conv B = "B"
           conv R = "R"
 
--- balance in condition of Red trees
+-- balance in any condition of Red trees, all return valid B-R-B tree structure
 balance : Ord a => RB a -> a -> RB a -> RB a
-balance (Tree R a x b) y (Tree R c z d) = Tree R (Tree B a x b) y (Tree B c z d)  -- R v R
-balance (Tree R (Tree R a x b) y c) z d = Tree R (Tree B a x b) y (Tree B c z d)
-balance (Tree R a x (Tree R b y c)) z d = Tree R (Tree B a x b) y (Tree B c z d)
-balance a x (Tree R b y (Tree R c z d)) = Tree R (Tree B a x b) y (Tree B c z d)
-balance a x (Tree R (Tree R b y c) z d) = Tree R (Tree B a x b) y (Tree B c z d)
-balance a x b = Tree B a x b
+balance (Tree R a x b) y (Tree R c z d) = Tree R (Tree B a x b) y (Tree B c z d) -- balanced already
+balance (Tree R (Tree R a x b) y c) z d = Tree R (Tree B a x b) y (Tree B c z d) -- LL
+balance (Tree R a x (Tree R b y c)) z d = Tree R (Tree B a x b) y (Tree B c z d) -- LR
+balance a x (Tree R b y (Tree R c z d)) = Tree R (Tree B a x b) y (Tree B c z d) -- RR
+balance a x (Tree R (Tree R b y c) z d) = Tree R (Tree B a x b) y (Tree B c z d) -- RL 
+balance a x b = Tree B a x b  -- others
 
-ins : Ord a => a -> RB a -> RB a
-ins x E = Tree R E x E
-ins x (Tree B a y b) = case compare x y of
-        LT => balance (ins x a) y b   -- smaller -> go to left
-        GT => balance a y (ins x b)   -- merge to right subtree
-        EQ => Tree B a y b
-ins x (Tree R a y b) = case compare x y of
-      LT => Tree R (ins x a) y b  -- go left
-      GT => Tree R a y (ins x b)
-      EQ => Tree R a y b
-
-RtoB : RB a -> RB a
-RtoB (Tree _ a x b) = Tree B a x b
-RtoB E = E
-
+-- for insert, only requires fn: insert, balance
 insert : Ord a => a -> RB a -> RB a
-insert x s = RtoB (ins x s)
-
+insert x s = RtoB (ins x s) where -- top node must be Blue
+  RtoB : RB a -> RB a -- convert color from R bo B
+  RtoB (Tree _ a x b) = Tree B a x b
+  RtoB E = E
+  ins : Ord a => a -> RB a -> RB a
+  ins x E = Tree R E x E
+  -- balance only when encounter B ?
+  ins x (Tree B a y b) = case compare x y of  
+          LT => balance (ins x a) y b   -- smaller -> go to left
+          GT => balance a y (ins x b)   -- merge to right subtree
+          EQ => Tree B a y b
+  ins x (Tree R a y b) = case compare x y of
+        LT => Tree R (ins x a) y b  -- go left
+        GT => Tree R a y (ins x b)
+        EQ => Tree R a y b
 
 -- substitute color to R
 sub1 : RB a -> RB a
@@ -58,12 +57,10 @@ balright (Tree R a x (Tree B b y c)) z bl = Tree R (balance (sub1 a) x b) y (Tre
 app : RB a -> RB a ->RB a
 app E x = x
 app x E = x
-app (Tree R a x b) (Tree R c y d) =
-	case app b c of
+app (Tree R a x b) (Tree R c y d) = case app b c of
 	    Tree R b' z c' => Tree R(Tree R a x b') z (Tree R c' y d)
 	    bc => Tree R a x (Tree R bc y d)
-app (Tree B a x b) (Tree B c y d) = 
-	case app b c of
+app (Tree B a x b) (Tree B c y d) = case app b c of
 	    Tree R b' z c' => Tree R(Tree B a x b') z (Tree B c' y d)
 	    bc => balleft a x (Tree B bc y d)
 app a (Tree R b x c) = Tree R (app a b) x c
@@ -89,10 +86,6 @@ deletes: Ord a => a -> RB a -> RB a
 deletes x t = case del x t of
   Tree _ a y b => Tree B a y b
   otherwise => E
-
-showing : Num a => RB a -> String
-showing E = "e"  
-showing _ = "fuck"
 
 buildTree : Ord a => List a -> RB a -> RB a
 buildTree [] tree = tree
