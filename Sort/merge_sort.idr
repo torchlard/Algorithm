@@ -2,13 +2,14 @@ module Main
 
 
 mergeSort : Ord a => (List a , List a)  -> List a
-mergeSort ([], []) = []
-mergeSort ([x], []) = [x]
-mergeSort ([], [x]) = [x]
-mergeSort ((x::xs), (y::ys)) = (if x<y then [x]++[y] else [y]++[x]) ++ (mergeSort (xs, ys))
+mergeSort ( x, []) = x
+mergeSort ([], x) = x
+mergeSort ((x::xs), (y::ys)) = if x<y then x :: mergeSort ( xs, y::ys )
+                                      else y :: mergeSort ( x::xs, ys )
 
 
 merges : Ord a => List a -> List a
+merges [] = []
 merges x = let len = length x 
                pair = splitAt (len `div` 2) x 
                s1 = fst pair ; s2 = snd pair in
